@@ -62,8 +62,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       TZ: ${TZ}
     ports:
-      - "127.0.0.1:2081:8081" # hanya lokal
-    command: ["--bind=0.0.0.0", "--listen=8081"]
+      - "2081:8081" # hanya lokal
+    command: ["--bind=0.0.0.0", "--listen=8081", "--auth=admin:secretpass"]
     profiles: ["gui"]   # start hanya jika dipanggil dengan --profile gui
 
   # Backup harian (rotasi 7 hari), jam 02:15 WIB
