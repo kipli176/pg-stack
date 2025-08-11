@@ -53,7 +53,7 @@ services:
 
   # GUI ringan – jalankan hanya saat perlu
   pgweb:
-    image: sosedoff/pgweb:0.15.0 # pin versi agar repeatable
+    image: sosedoff/pgweb:0.16.2 # pin versi agar repeatable
     container_name: pgweb
     depends_on:
       postgres:
@@ -63,7 +63,12 @@ services:
       TZ: ${TZ}
     ports:
       - "2081:8081" # hanya lokal
-    command: ["--bind=0.0.0.0", "--listen=8081"]
+    command: [
+      "--bind=0.0.0.0",
+      "--listen=8081",
+      "--auth-username=kipli",
+      "--auth-password=rahasia1"
+    ]
     profiles: ["gui"]   # start hanya jika dipanggil dengan --profile gui
 
   # Backup harian (rotasi 7 hari), jam 02:15 WIB
