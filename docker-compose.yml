@@ -66,8 +66,8 @@ services:
     command: [
       "--bind=0.0.0.0",
       "--listen=8081",
-      "--auth-username=kipli",
-      "--auth-password=rahasia1"
+      "--auth-user=kipli",
+      "--auth-pass=rahasia1"
     ]
     profiles: ["gui"]   # start hanya jika dipanggil dengan --profile gui
 
