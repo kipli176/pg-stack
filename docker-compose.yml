@@ -63,7 +63,7 @@ services:
       TZ: ${TZ}
     ports:
       - "2081:8081" # hanya lokal
-    command: ["--bind=0.0.0.0", "--listen=8081", "--auth=admin:secretpass"]
+    command: ["--bind=0.0.0.0", "--listen=8081"]
     profiles: ["gui"]   # start hanya jika dipanggil dengan --profile gui
 
   # Backup harian (rotasi 7 hari), jam 02:15 WIB
