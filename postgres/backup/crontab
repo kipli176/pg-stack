@@ -1,0 +1,22 @@
+# Backup harian jam 02:15 WIB, custom format untuk pg_restore -j, plus globals terpisah.
+# ┌──────── min (15)
+# │ ┌────── hour (02)  -> Asia/Jakarta via TZ env
+# │ │ ┌──── day of month
+# │ │ │ ┌── month
+# │ │ │ │ ┌ day of week
+# │ │ │ │ │
+15 2 * * * /bin/sh -c '\
+  now=$(date +\%Y\%m\%d_\%H\%M); \
+  db="${PGDATABASE:-appdb}"; \
+  base="/backups/${db}-${now}"; \
+  echo "[backup] $(date) dumping to ${base}.dump"; \
+  pg_dump -Fc "$db" > "${base}.dump"; \
+  echo "[backup] $(date) dumping globals to ${base}.globals.sql"; \
+  pg_dumpall -g > "${base}.globals.sql"; \
+  echo "[backup] $(date) compressing"; \
+  gzip -9 "${base}.dump" "${base}.globals.sql"; \
+  echo "[backup] $(date) done"; \
+  # rotasi: hapus file lebih tua dari N hari
+  find /backups -type f -name "${db}-*.dump.gz" -mtime +${RETENTION_DAYS:-7} -print -delete; \
+  find /backups -type f -name "${db}-*.globals.sql.gz" -mtime +${RETENTION_DAYS:-7} -print -delete \
+'

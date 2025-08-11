@@ -1,0 +1,96 @@
+services:
+  postgres:
+    build:
+      context: ./postgres
+    container_name: pg
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ}
+    command:
+      [
+        "postgres",
+        # "-c","shared_preload_libraries=pg_cron,pg_stat_statements",
+        "-c","cron.database_name=${POSTGRES_DB}",
+        "-c","max_connections=150",
+        "-c","shared_buffers=1GB",
+        "-c","work_mem=16MB",
+        "-c","maintenance_work_mem=512MB",
+        "-c","wal_level=replica",
+        "-c","max_wal_size=8GB",
+        "-c","checkpoint_timeout=10min",
+        "-c","checkpoint_completion_target=0.9",
+        "-c","wal_compression=on",
+        # Jika perlu pg_partman bgw:
+        "-c","shared_preload_libraries=pg_cron,pg_stat_statements,pg_partman_bgw",
+        "-c","pg_partman_bgw.dbname=${POSTGRES_DB}"
+      ]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    shm_size: "1g" # penting untuk shared_buffers besar
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    # (opsional) batasi resource
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "2"
+    #       memory: 4g
+
+  # GUI ringan – jalankan hanya saat perlu
+  pgweb:
+    image: sosedoff/pgweb:0.15.0 # pin versi agar repeatable
+    container_name: pgweb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      TZ: ${TZ}
+    ports:
+      - "127.0.0.1:2081:8081" # hanya lokal
+    command: ["--bind=0.0.0.0", "--listen=8081"]
+    profiles: ["gui"]   # start hanya jika dipanggil dengan --profile gui
+
+  # Backup harian (rotasi 7 hari), jam 02:15 WIB
+  backup:
+    build:
+      context: ./backup
+    container_name: pgbackup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      TZ: ${TZ}
+      RETENTION_DAYS: "7"
+    volumes:
+      - backups:/backups
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+volumes:
+  pgdata:
+  backups:
