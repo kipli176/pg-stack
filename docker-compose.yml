@@ -30,7 +30,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "2432:5432"
     shm_size: "1g" # penting untuk shared_buffers besar
     restart: unless-stopped
     healthcheck:
